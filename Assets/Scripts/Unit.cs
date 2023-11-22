@@ -11,6 +11,7 @@ public class Unit : MonoBehaviour
     public Animator animator;
     public GameObject knightDead;
     public SpriteRenderer healthIndicator;
+    private GameObject altar;
 /*    public CircleCollider2D sightCollider;*/
 
     public int lvl;
@@ -23,6 +24,9 @@ public class Unit : MonoBehaviour
     public float attackSpeed;
     public float attackRange;
     public float sight;
+    public float force = 0;
+
+    public float cost = 0f;
 
     public float defaultSpeed = 0.5f;
     public float defaultMaxHealth = 150f;
@@ -49,20 +53,26 @@ public class Unit : MonoBehaviour
     public List<GameObject> enemiesInSight;
     public GameObject nearestEnemyInSight;
     private float timeNextCheck = 0f;
-    private float timeBetweenChecks = 0.5f;
 
     float deathTimer;
     float attackTimer;
 
+    public bool showHealthAndLvl = false;
+
+    private void Awake()
+    {
+        exp = 0f;
+    }
     void Start()
     {
+        altar = GameObject.FindGameObjectWithTag("Altar");
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
         /*sightCollider = transform.Find("sight").GetComponent<CircleCollider2D>();*/
 
         lvl = 1;
         nextLvlExp = 1f + (lvl - 1f) * 0.25f;
-        exp = 0f;
+
         speed = defaultSpeed;
         maxHealth = defaultMaxHealth;
         health = maxHealth;
@@ -75,17 +85,24 @@ public class Unit : MonoBehaviour
 
         freeWalkingTimer = Time.time;
         freeWalkingTime = Random.Range(3f, 15f);
-        freeWalkingBoundsX.Add(-5f);
-        freeWalkingBoundsX.Add(5f);
-        freeWalkingBoundsY.Add(-5f);
-        freeWalkingBoundsY.Add(5f);
+        freeWalkingBoundsX.Add(-4f);
+        freeWalkingBoundsX.Add(4f);
+        freeWalkingBoundsY.Add(-4f);
+        freeWalkingBoundsY.Add(4f);
+        if (transform.CompareTag("Player"))
+        {
         UpdateFreeWalkingDirection();
+        } else if (transform.CompareTag("Enemy"))
+        {
+            freeWalkingDirection = new Vector2(0f, 0f);
+        }
 
   /*      enemiesInSight = new List<GameObject>();*/
         deathTimer = 0f;
         attackTimer = attackSpeed / 2f;
         updateNearestEnemyInSight2();
         UpdateHealthBar();
+        HandleShowHpAndLvl();
 
         state = 1;
     }
@@ -96,6 +113,14 @@ public class Unit : MonoBehaviour
         {
             //do distance check here
             updateNearestEnemyInSight2();
+
+            showHealthAndLvl = GameController.GetIsLvlAndHpVisible();
+
+            HandleShowHpAndLvl();
+            if(state == 1)
+            {
+                Heal(0.2f);
+            }
 
             timeNextCheck = Time.time + Random.Range(0, 1f);
         }
@@ -121,12 +146,13 @@ public class Unit : MonoBehaviour
                 animator.SetInteger("state", 1);
             }
 
-            if(Time.time - freeWalkingTimer > freeWalkingTime) 
+            if(transform.CompareTag("Player") && Time.time - freeWalkingTimer > freeWalkingTime) 
             {
                 UpdateFreeWalkingDirection();
                 freeWalkingTimer = Time.time;
                 freeWalkingTime = Random.Range(3f, 15f);
             }
+
 
             if (new Vector2(freeWalkingDirection.x, freeWalkingDirection.y) == new Vector2(transform.position.x, transform.position.y))
             {
@@ -168,6 +194,14 @@ public class Unit : MonoBehaviour
             }
 
 
+            if(nearestEnemyInSight == altar)
+            {
+                attackRange = altar.GetComponent<CircleCollider2D>().radius + transform.GetComponent<CircleCollider2D>().radius + 0.1f;
+            } else
+            {
+                attackRange = defaultAttackRange;
+            }
+
             /*            if (Vector2.Distance(thisPosition, enemyPosition) <= attackRange)*/
             if ((thisPosition - enemyPosition).sqrMagnitude <= attackRange * attackRange)
             {
@@ -183,14 +217,21 @@ public class Unit : MonoBehaviour
                     
                 if (attackTimer >= attackSpeed)
                 {
-                    Unit enemyUnit = nearestEnemyInSight.GetComponent<Unit>();
-                    enemyUnit.Hurt(attack);
+                    Unit enemyUnit;
+                    if (nearestEnemyInSight != altar)
+                    {
+                        enemyUnit = nearestEnemyInSight.GetComponent<Unit>();
+                        enemyUnit.Hurt(attack);
+                        if(enemyUnit.health <= 0f)
+                        {
+                            exp += 1f + Mathf.Sqrt(enemyUnit.lvl);
+                        }
+                    } else
+                    {
+                        altar.GetComponent<Altar>().Hurt(attack);
+                    }
                     attackTimer = 0f;
 
-                    if(enemyUnit.health <= 0f)
-                    {
-                        exp += 1f;
-                    }
                 }
                 attackTimer += Time.deltaTime;
             }
@@ -218,11 +259,12 @@ public class Unit : MonoBehaviour
                 Destroy(transform.gameObject);
             }
         }
+
     }
 
     private void FixedUpdate()
     {
-        if (exp >= nextLvlExp)
+        if (exp >= nextLvlExp && state != 3)
         {
             lvlUp();
         }
@@ -257,6 +299,17 @@ public class Unit : MonoBehaviour
                 }
             }
         }
+        if (transform.CompareTag("Enemy"))
+        {
+            float altarDistanceSqrMagnitude = (new Vector2(transform.position.x, transform.position.y) - new Vector2(altar.transform.position.x, altar.transform.position.y)).sqrMagnitude;
+            if (altarDistanceSqrMagnitude < sight * sight)
+            {
+                if (altarDistanceSqrMagnitude < minDistance)
+                {
+                    nearestEnemyInSight = altar;
+                }
+            }
+        }
     }
 
     void lvlUp()
@@ -277,6 +330,7 @@ public class Unit : MonoBehaviour
         {
             health = maxHealth;
         }
+        updateLvlStar();
         UpdateHealthBar();
 
     }
@@ -285,7 +339,7 @@ public class Unit : MonoBehaviour
     {
         float x = Random.Range(freeWalkingBoundsX[0], freeWalkingBoundsX[1]);
         float y = Random.Range(freeWalkingBoundsY[0], freeWalkingBoundsY[1]);
-        freeWalkingDirection = new Vector2(x, y);
+        freeWalkingDirection = Random.insideUnitCircle * (2f + Mathf.Sqrt(GameController.GetPlayerUnits().Count)/4f);
     }
 
     public void Hurt(float attackDamage)
@@ -293,6 +347,22 @@ public class Unit : MonoBehaviour
         float dmg = attackDamage * (1f - (defense / (defense + 40)));
         health -= dmg;
         UpdateHealthBar();
+    }
+
+    public void Heal(float maxHealthPercent)
+    {
+        health += maxHealth * maxHealthPercent/100f;
+        if(health > maxHealth)
+        {
+            health = maxHealth;
+        }
+        UpdateHealthBar();
+    }
+
+    public void GiveExp(float experience)
+    {
+        this.exp = exp + experience;
+        updateLvlStar();
     }
 
     void UpdateHealthBar()
@@ -305,5 +375,23 @@ public class Unit : MonoBehaviour
         healthIndicator.transform.localScale = new Vector3(size, 1, 1);
         //healthIndicator.transform.SetPositionAndRotation(new Vector3(size, 0, 0), Quaternion.identity);
         healthIndicator.transform.localPosition = new Vector3(-0.2365f + 0.01075f * size, 0, 0);
+    }
+
+    void updateLvlStar()
+    {
+        SpriteRenderer starSprite = healthIndicator.transform.parent.Find("star").GetComponent<SpriteRenderer>();
+        starSprite.color = new Color(1f, 1f, 1f * (1f - lvl/100f));
+    }
+
+    void HandleShowHpAndLvl()
+    {
+        if(showHealthAndLvl)
+        {
+            healthIndicator.transform.parent.transform.gameObject.SetActive(true);
+        }
+        else
+        {
+            healthIndicator.transform.parent.transform.gameObject.SetActive(false);
+        }
     }
 }
