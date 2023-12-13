@@ -1,19 +1,27 @@
-using Cainos.PixelArtTopDown_Basic;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.Contracts;
 using TMPro;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameController : MonoBehaviour
 {
     public GameObject altar;
     public GameObject canvas;
-    public Button[] buttons;
-    TextMeshProUGUI[] texts;
+    public GameObject UpgradePanel;
+    public List<Button> buttons;
+    public List<TextMeshProUGUI> texts;
+    public List<Button> upgradeButtons;
+    public List<TextMeshProUGUI> upgradeLvls;
+    public List<TextMeshProUGUI> upgradeBonuses;
+    public List<TextMeshProUGUI> upgradeCosts;
+    public Button upgradesExitButton;
+    public TextMeshProUGUI moneyIndicatorText;
+    public TextMeshProUGUI waveIndicatorText;
+    public GameObject gameOverPanel;
+    public Button GameOverButton;
+    public AudioSource audioSource;
+
 
     public static List<GameObject> playerUnits = new List<GameObject>();
     public static List<GameObject> enemyUnits = new List<GameObject>();
@@ -22,8 +30,27 @@ public class GameController : MonoBehaviour
     public List<GameObject> enemyUnit = new List<GameObject>();
 
     public bool gameOver = false;
-    public float money;
+    public static float money;
+
     private float moneyIncomePerSecond;
+    public int upgradeMoneyIncomeLevel = 0;
+    public float upgradeMoneyIncomeCost = 50f;
+    public float upgradeMoneyIncomeMultiplier = 0.5f;
+
+    public float unitStartingExp = 0f;
+    public int upgradeExpLevel = 0;
+    public float upgradeExpCost = 50f;
+    public float upgradeExpMultiplier = 1f;
+
+    public int upgradeAltarHealthLevel = 0;
+    public float upgradeAltarHealthCost = 50f;
+    public float upgradeAltarHealthMultiplier = 500f;
+
+    public int upgradeAltarHealthRegenerationLevel = 0;
+    public float upgradeAltarHealthRegenerationCost = 50f;
+    public float upgradeAltarHealthRegenerationMultiplier = 1f;
+
+
 
     public int wave = 1;
     // 0 spawning
@@ -33,7 +60,7 @@ public class GameController : MonoBehaviour
     public float waveForce = 2;
     public float currentWaveForce = 0;
 
-    public float timeBetweenWaves = 10f;
+    public float timeBetweenWaves = 1f;
     public float betweenWavesTimer = 0f;
     public float currentWaveSpawningTime = 0f;
     public float waveSpawnerTimer = 0f;
@@ -41,15 +68,74 @@ public class GameController : MonoBehaviour
 
     public static bool isLvlAndHpVisible = false;
     private float timeNextIncome = 0f;
-    // Start is called before the first frame update
+
+    private void Awake()
+    {
+        playerUnits = new List<GameObject>();
+        enemyUnits = new List<GameObject>();
+    }
+
     void Start()
     {
         money = 100f;
         moneyIncomePerSecond = 2f;
 
-        //canvas = GameObject.Find("Canvas");
-        texts = canvas.transform.GetComponentsInChildren<TextMeshProUGUI>();
-        buttons = canvas.transform.GetComponentsInChildren<Button>();
+        upgradeMoneyIncomeLevel = 0;
+        upgradeMoneyIncomeCost = 50f;
+        upgradeMoneyIncomeMultiplier = 0.5f;
+        unitStartingExp = 0f;
+        upgradeExpLevel = 0;
+        upgradeExpCost = 50f;
+        upgradeExpMultiplier = 1f;
+        upgradeAltarHealthLevel = 0;
+        upgradeAltarHealthCost = 50f;
+        upgradeAltarHealthMultiplier = 500f;
+        upgradeAltarHealthRegenerationLevel = 0;
+        upgradeAltarHealthRegenerationCost = 50f;
+        upgradeAltarHealthRegenerationMultiplier = 1f;
+
+
+        foreach (Button button in canvas.transform.GetComponentsInChildren<Button>())
+        {
+            if (button.CompareTag("Upgrade"))
+            {
+                upgradeButtons.Add(button);
+            }
+
+            if (button.CompareTag("AddUnit"))
+            {
+                buttons.Add(button);
+            }
+
+            if (button.CompareTag("Exit"))
+            {
+                upgradesExitButton = button;
+            }
+        }
+
+
+        foreach (TextMeshProUGUI text in canvas.transform.GetComponentsInChildren<TextMeshProUGUI>())
+        {
+            if (text.CompareTag("AddUnit"))
+            {
+                texts.Add(text);
+            }
+
+            if (text.CompareTag("Lvl"))
+            {
+                upgradeLvls.Add(text);
+            }
+
+            if (text.CompareTag("Bonus"))
+            {
+                upgradeBonuses.Add(text);
+            }
+
+            if (text.CompareTag("Cost"))
+            {
+                upgradeCosts.Add(text);
+            }
+        }
 
         texts[0].text = playerUnit[0].GetComponent<Unit>().cost.ToString();
         texts[1].text = playerUnit[1].GetComponent<Unit>().cost.ToString();
@@ -57,39 +143,46 @@ public class GameController : MonoBehaviour
         float altarPosX = altar.transform.position.x;
         float altarPosY = altar.transform.position.y;
 
-/*        for (int i = 0; i < 200; i++)
-        {
-            GameObject unit = Instantiate(playerUnit[0], new Vector3(Random.Range(-7f, 7f), Random.Range(-7f, 7f), 0f), Quaternion.identity);
-            playerUnits.Add(unit);
-        }
+        UpgradePanel.SetActive(false);
+        gameOverPanel.SetActive(false);
 
-        for (int i = 0; i < 200; i++)
-        {
-            GameObject unit = Instantiate(enemyUnit[0], new Vector3(Random.Range(-7f, 7f), Random.Range(-7f, 7f), 0f), Quaternion.identity);
-            enemyUnits.Add(unit);
-        }
-
-        for (int i = 0; i < 40; i++)
-        {
-            GameObject unit = Instantiate(playerUnit[1], new Vector3(Random.Range(-7f, 7f), Random.Range(-7f, 7f), 0f), Quaternion.identity);
-            playerUnits.Add(unit);
-        }
-
-        for (int i = 0; i < 40; i++)
-        {
-            GameObject unit = Instantiate(enemyUnit[1], new Vector3(Random.Range(-7f, 7f), Random.Range(-7f, 7f), 0f), Quaternion.identity);
-            enemyUnits.Add(unit);
-        }*/
+        audioSource.Play();
     }
 
-    // Update is called once per frame
+ 
+
     void Update()
     {
+        if (altar.GetComponent<Altar>().health <= 0)
+        {
+            gameOver = true;
+        }
+
+        if(gameOver)
+        {
+            Button[] allButtons = canvas.GetComponentsInChildren<Button>();
+            foreach (Button button in allButtons)
+            {
+                button.interactable = false;
+            }
+
+
+            UpgradePanel.SetActive(false);
+
+            Time.timeScale = 0.05f;
+
+            gameOverPanel.SetActive(true);
+            GameOverButton.interactable = true;
+        }
+
+        moneyIndicatorText.text = string.Format("{0:N0}", money);
+        waveIndicatorText.text = string.Format("{0:N0}", wave);
+
         if (waveState == 0)
         {
             currentWaveSpawningTime += Time.deltaTime;
-            waveForce = wave * 2;
-            spawningDuration = (float)wave / 8f;
+            waveForce = (wave * 3f) - 1f;
+            spawningDuration = (float)wave / 15f;
             if (currentWaveSpawningTime > spawningDuration)
             {
                 waveState = 1;
@@ -121,25 +214,37 @@ public class GameController : MonoBehaviour
             }
         }
 
-        if (altar.GetComponent<Altar>().health <= 0)
-        {
-            gameOver = true;
-        }
+
 
         if (Input.GetKeyDown(KeyCode.T))
         {
             isLvlAndHpVisible = !isLvlAndHpVisible;
         }
 
-        for(int i = 0; i < buttons.Length; i++)
+        for(int i = 0; i < buttons.Count; i++)
         {
-            if(money < float.Parse(texts[i].text))
+            if (!gameOver)
             {
-                buttons[i].interactable = false;
+                if (money < float.Parse(texts[i].text))
+                {
+                    buttons[i].interactable = false;
+                }
+                else
+                {
+                    buttons[i].interactable = true;
+                }
+            }
+        }
+
+        for(int i = 0; i < upgradeButtons.Count; i++)
+        {
+            if(money < float.Parse(upgradeCosts[i].text))
+            {
+                upgradeButtons[i].interactable = false;
             }
             else
             {
-                buttons[i].interactable = true;
+                upgradeButtons[i].interactable = true;
             }
         }
 
@@ -165,6 +270,7 @@ public class GameController : MonoBehaviour
         if (unit.CompareTag("Enemy"))
         {
             enemyUnits.Remove(unit);
+            money += unit.GetComponent<Unit>().cost * 0.38f;
         }
         else if (unit.CompareTag("Player"))
         {
@@ -172,11 +278,6 @@ public class GameController : MonoBehaviour
         }
         
     }
-/*
-    public static void RemoveFromEnemyUnits(GameObject unit)
-    {
-        enemyUnits.Remove(unit);
-    }*/
 
     public static bool GetIsLvlAndHpVisible()
     {
@@ -186,7 +287,9 @@ public class GameController : MonoBehaviour
     public void BuyUnit(int code)
     {
         GameObject unit = Instantiate(playerUnit[code], Random.insideUnitCircle.normalized * 2, Quaternion.identity);
-        this.money -= unit.GetComponent<Unit>().cost;
+        Unit unitComponent = unit.GetComponent<Unit>();
+        unitComponent.exp = unitStartingExp;
+        money -= unitComponent.cost;
         playerUnits.Add(unit);
     }
 
@@ -212,8 +315,12 @@ public class GameController : MonoBehaviour
 
         while (canSpawn.Count != 0 && forceCompletion < timeCompletion)
         {
-            Vector2 enemyPosition = Random.insideUnitCircle.normalized * 15;
+            Vector2 enemyPosition = Random.insideUnitCircle.normalized * 20;
             int whichEnemy = Random.Range(0, canSpawn.Count);
+            if(whichEnemy == 3)
+            {
+                whichEnemy = Random.Range(0, canSpawn.Count);
+            }
             float unitExp = Random.Range(0f ,(float)wave/4f);
             float additionalForceFromExp = unitExp / 10f;
             GameObject unit = Instantiate(enemyUnit[whichEnemy], enemyPosition, Quaternion.identity);
@@ -242,5 +349,55 @@ public class GameController : MonoBehaviour
         {
             unit.GetComponent<Unit>().Heal(maxHealthPercent);
         }
+    }
+    public void upgradeMoneyIncome()
+    {
+        upgradeMoneyIncomeLevel++;
+        money -= float.Parse(upgradeCosts[2].text);
+        moneyIncomePerSecond = 2f + (upgradeMoneyIncomeLevel * 1f * upgradeMoneyIncomeMultiplier);
+        upgradeLvls[2].text = string.Format("{0:N0}", upgradeMoneyIncomeLevel);
+        upgradeBonuses[2].text = string.Format("{0:N2}", moneyIncomePerSecond);
+        upgradeCosts[2].text = string.Format("{0:N0}", upgradeMoneyIncomeCost + (upgradeMoneyIncomeLevel * upgradeMoneyIncomeCost));
+    }
+
+    public void upgradeExp()
+    {
+        upgradeExpLevel++;
+        money -= float.Parse(upgradeCosts[3].text);
+        unitStartingExp = upgradeExpLevel * upgradeExpMultiplier;
+        upgradeLvls[3].text = string.Format("{0:N0}", upgradeExpLevel);
+        upgradeBonuses[3].text = string.Format("{0:N2}", unitStartingExp);
+        upgradeCosts[3].text = string.Format("{0:N0}", upgradeExpCost + (upgradeExpLevel * upgradeExpCost));
+    }
+
+    public void upgradeAltarHealth()
+    {
+        upgradeAltarHealthLevel++;
+        money -= float.Parse(upgradeCosts[0].text);
+        altar.GetComponent<Altar>().maxHealth = 1000f + (upgradeAltarHealthLevel * upgradeAltarHealthMultiplier);
+        upgradeLvls[0].text = string.Format("{0:N0}", upgradeAltarHealthLevel);
+        upgradeBonuses[0].text = string.Format("{0:N0}", altar.GetComponent<Altar>().maxHealth);
+        upgradeCosts[0].text = string.Format("{0:N0}", upgradeAltarHealthCost + (upgradeAltarHealthLevel * upgradeAltarHealthCost));
+    }
+
+    public void upgradeAltarHealthRegeneration()
+    {
+        upgradeAltarHealthRegenerationLevel++;
+        money -= float.Parse(upgradeCosts[1].text);
+        altar.GetComponent<Altar>().healthRegen = 1f + (1f * upgradeAltarHealthRegenerationLevel * upgradeAltarHealthRegenerationMultiplier);
+        upgradeLvls[1].text = string.Format("{0:N0}", upgradeAltarHealthRegenerationLevel);
+        upgradeBonuses[1].text = string.Format("{0:N2}", altar.GetComponent<Altar>().healthRegen);
+        upgradeCosts[1].text = string.Format("{0:N0}", upgradeAltarHealthRegenerationCost + (upgradeAltarHealthRegenerationLevel * upgradeAltarHealthRegenerationCost));
+    }
+
+    public void ToggleUpgradesExitButtonActive()
+    {
+        UpgradePanel.SetActive(!UpgradePanel.activeSelf);
+    }
+
+    public void LoadMenu()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("Menu");
     }
 }

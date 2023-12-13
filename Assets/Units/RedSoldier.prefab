@@ -469,7 +469,7 @@ Transform:
   m_GameObject: {fileID: 4797249745327844429}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.9116287, y: -4.0210013, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0.4, y: 0.4, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -576,6 +576,13 @@ MonoBehaviour:
   animator: {fileID: 0}
   knightDead: {fileID: 6417246114645568322, guid: 2c221b2262a37bb47a97696da7aa8ab7, type: 3}
   healthIndicator: {fileID: 188736312215061876}
+  clips:
+  - {fileID: 8300000, guid: b4681c802391d1b4287b3d50b46c61f7, type: 3}
+  - {fileID: 8300000, guid: b0afe4b9b1767cd4b9032d28006fcaf3, type: 3}
+  - {fileID: 8300000, guid: bd30483ec08e07c43ab5a5433ba4639f, type: 3}
+  - {fileID: 8300000, guid: b6409dd6ebc393c4e8093418430b205f, type: 3}
+  - {fileID: 8300000, guid: d57687e7be8450d46bb0fcfbb88de558, type: 3}
+  - {fileID: 8300000, guid: 1c742cea8e50cc4449a93bdc3d705558, type: 3}
   lvl: 0
   exp: 0
   speed: 0
@@ -593,7 +600,7 @@ MonoBehaviour:
   defaultDefense: 8
   defaultAttack: 15
   defaultAttackSpeed: 0.8333333
-  defaultAttackRange: 0.5
+  defaultAttackRange: 0.6
   defaultSight: 5
   nextLvlExp: 0
   state: 0

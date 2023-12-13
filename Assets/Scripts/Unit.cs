@@ -1,9 +1,5 @@
-using System.Collections;
 using System.Collections.Generic;
-using Unity.VisualScripting;
-using UnityEditorInternal;
 using UnityEngine;
-using static UnityEngine.UI.CanvasScaler;
 
 public class Unit : MonoBehaviour
 {
@@ -12,7 +8,7 @@ public class Unit : MonoBehaviour
     public GameObject knightDead;
     public SpriteRenderer healthIndicator;
     private GameObject altar;
-/*    public CircleCollider2D sightCollider;*/
+    public List<AudioClip> clips;
 
     public int lvl;
     public float exp;
@@ -68,7 +64,6 @@ public class Unit : MonoBehaviour
         altar = GameObject.FindGameObjectWithTag("Altar");
         rb = GetComponent<Rigidbody2D>();
         animator = GetComponent<Animator>();
-        /*sightCollider = transform.Find("sight").GetComponent<CircleCollider2D>();*/
 
         lvl = 1;
         nextLvlExp = 1f + (lvl - 1f) * 0.25f;
@@ -81,7 +76,6 @@ public class Unit : MonoBehaviour
         attackSpeed = defaultAttackSpeed;
         attackRange = defaultAttackRange;
         sight = defaultSight;
- /*       sightCollider.radius = sight;*/
 
         freeWalkingTimer = Time.time;
         freeWalkingTime = Random.Range(3f, 15f);
@@ -97,7 +91,6 @@ public class Unit : MonoBehaviour
             freeWalkingDirection = new Vector2(0f, 0f);
         }
 
-  /*      enemiesInSight = new List<GameObject>();*/
         deathTimer = 0f;
         attackTimer = attackSpeed / 2f;
         updateNearestEnemyInSight2();
@@ -111,7 +104,6 @@ public class Unit : MonoBehaviour
     {
         if (Time.time >= timeNextCheck)
         {
-            //do distance check here
             updateNearestEnemyInSight2();
 
             showHealthAndLvl = GameController.GetIsLvlAndHpVisible();
@@ -173,7 +165,6 @@ public class Unit : MonoBehaviour
 
             }
             transform.position = dir;
-            //rb.AddForce(new Vector2(dir.x * 0.1f, dir.y * 0.001f));
         }
 
         if(state == 2)
@@ -202,33 +193,28 @@ public class Unit : MonoBehaviour
                 attackRange = defaultAttackRange;
             }
 
-            /*            if (Vector2.Distance(thisPosition, enemyPosition) <= attackRange)*/
             if ((thisPosition - enemyPosition).sqrMagnitude <= attackRange * attackRange)
             {
                 if(animator.GetInteger("state") != 2)
                 {
                     animator.SetInteger("state", 2);
                 }
-
-/*                if (attackTimer >= attackSpeed && Random.Range(0f, 10f) < 3)
-                {
-                    attackTimer = 0f;
-                }*/
                     
                 if (attackTimer >= attackSpeed)
                 {
+                    AudioSource.PlayClipAtPoint(clips[Random.Range(0, clips.Count)], transform.position, 0.6f);
                     Unit enemyUnit;
                     if (nearestEnemyInSight != altar)
                     {
                         enemyUnit = nearestEnemyInSight.GetComponent<Unit>();
-                        enemyUnit.Hurt(attack);
+                        enemyUnit.Hurt(attack * Random.Range(0.5f, 2.0f));
                         if(enemyUnit.health <= 0f)
                         {
                             exp += 1f + Mathf.Sqrt(enemyUnit.lvl);
                         }
                     } else
                     {
-                        altar.GetComponent<Altar>().Hurt(attack);
+                        altar.GetComponent<Altar>().Hurt(attack * Random.Range(0.5f, 1.5f));
                     }
                     attackTimer = 0f;
 
@@ -241,8 +227,6 @@ public class Unit : MonoBehaviour
                 animator.SetInteger("state", 1);
                 Vector2 dir = Vector2.MoveTowards(thisPosition, enemyPosition, speed * Time.deltaTime);
                 transform.position = dir;
-                //rb.AddForce(dir);
-                
             }
         }
 
@@ -310,6 +294,22 @@ public class Unit : MonoBehaviour
                 }
             }
         }
+        if (transform.CompareTag("Player"))
+        {
+            if(nearestEnemyInSight != null)
+            {
+                float enemyDistance = Vector2.Distance(altar.transform.position, nearestEnemyInSight.transform.position);
+                float thisUnitDistance = Vector2.Distance(altar.transform.position, transform.position);
+                if (enemyDistance > (2f + Mathf.Sqrt(GameController.GetPlayerUnits().Count) / 4f))
+                {
+                    if(enemyDistance > thisUnitDistance && Random.Range(0, 5) == 0)
+                    {
+                        nearestEnemyInSight = null;
+                        UpdateFreeWalkingDirection();
+                    }
+                }
+            }
+        }
     }
 
     void lvlUp()
@@ -325,7 +325,8 @@ public class Unit : MonoBehaviour
         maxHealth = defaultMaxHealth + defaultMaxHealth * (lvl - 1) * 0.1f;
         defense = defaultDefense + defaultDefense * (lvl - 1) * 0.1f;
         attack = defaultAttack + defaultAttack * (lvl - 1) * 0.1f;
-        health += maxHealth * 0.2f * lvlsUp;
+        health += maxHealth * 0.08f * lvlsUp;
+
         if (health > maxHealth)
         {
             health = maxHealth;
@@ -368,19 +369,15 @@ public class Unit : MonoBehaviour
     void UpdateHealthBar()
     {
         int size = (int)((int)health / maxHealth * 22);
-/*        if(size < 1)
-        {
-            size = 1;
-        }*/
+
         healthIndicator.transform.localScale = new Vector3(size, 1, 1);
-        //healthIndicator.transform.SetPositionAndRotation(new Vector3(size, 0, 0), Quaternion.identity);
         healthIndicator.transform.localPosition = new Vector3(-0.2365f + 0.01075f * size, 0, 0);
     }
 
     void updateLvlStar()
     {
         SpriteRenderer starSprite = healthIndicator.transform.parent.Find("star").GetComponent<SpriteRenderer>();
-        starSprite.color = new Color(1f, 1f, 1f * (1f - lvl/100f));
+        starSprite.color = new Color(1f, 1f, 1f - (lvl/(lvl + 10f)));
     }
 
     void HandleShowHpAndLvl()

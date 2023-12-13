@@ -896,6 +896,13 @@ MonoBehaviour:
   animator: {fileID: 0}
   knightDead: {fileID: 703985675962510717, guid: 8707aa259133f7f43ba367aa3f1c45e3, type: 3}
   healthIndicator: {fileID: 1902397318706068950}
+  clips:
+  - {fileID: 8300000, guid: b4681c802391d1b4287b3d50b46c61f7, type: 3}
+  - {fileID: 8300000, guid: b0afe4b9b1767cd4b9032d28006fcaf3, type: 3}
+  - {fileID: 8300000, guid: bd30483ec08e07c43ab5a5433ba4639f, type: 3}
+  - {fileID: 8300000, guid: b6409dd6ebc393c4e8093418430b205f, type: 3}
+  - {fileID: 8300000, guid: d57687e7be8450d46bb0fcfbb88de558, type: 3}
+  - {fileID: 8300000, guid: 1c742cea8e50cc4449a93bdc3d705558, type: 3}
   lvl: 0
   exp: 0
   speed: 0
@@ -913,7 +920,7 @@ MonoBehaviour:
   defaultDefense: 20
   defaultAttack: 25
   defaultAttackSpeed: 1
-  defaultAttackRange: 0.6
+  defaultAttackRange: 0.7
   defaultSight: 5
   nextLvlExp: 0
   state: 0
